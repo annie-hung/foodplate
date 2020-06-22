@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+  <link rel="stylesheet" href="./Wobble.css">
+<head>
+  <meta content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.4.0/firebase.js"></script>
+    <script src="config.js"></script>
+    <script src="firebaseui.js"></script>
+    <link type="text/css" rel="stylesheet" href="firebaseui.css" />
+<title>擺盤美學</title>
+  <script type="text/javascript">
+      // FirebaseUI config.
+      var uiConfig = {
+        // Url to redirect to after a successful sign-in.
+        'signInSuccessUrl': '/',
+        'callbacks': {
+          'signInSuccess': function(user, credential, redirectUrl) {
+            if (window.opener) {
+              // The widget has been opened in a popup, so close the window
+              // and return false to not redirect the opener.
+              window.close();
+              return false;
+            } else {
+              // The widget has been used in redirect mode, so we redirect to the signInSuccessUrl.
+              return true;
+            }
+          }
+        },
+        'signInOptions': [
+          // TODO(developer): Remove the providers you don't need for your app.
+          {
+            provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+            // Required to enable this provider in One-Tap Sign-up.
+            authMethod: 'https://accounts.google.com',
+            // Required to enable ID token credentials for this provider.
+            clientId: CLIENT_ID
+          },
+          firebase.auth.FacebookAuthProvider.PROVIDER_ID,
+          firebaseui.auth.AnonymousAuthProvider.PROVIDER_ID
+        ],
+        // Terms of service url.
+        'tosUrl': 'https://www.google.com',
+        'credentialHelper': CLIENT_ID && CLIENT_ID != 'YOUR_OAUTH_CLIENT_ID' ?
+            firebaseui.auth.CredentialHelper.GOOGLE_YOLO :
+            firebaseui.auth.CredentialHelper.ACCOUNT_CHOOSER_COM
+      };
+
+      // Initialize the FirebaseUI Widget using Firebase.
+      var ui = new firebaseui.auth.AuthUI(firebase.auth());
+      // The start method will wait until the DOM is loaded to include the FirebaseUI sign-in widget
+      // within the element corresponding to the selector specified.
+      ui.start('#btn_box', uiConfig);
+  </script>
+</head>
+<body style="background-color: #807e7e;">
+  <div id="app" class="container">
+    <!--登入介面-->
+    <div class="login container justify-content-center" v-if="login">
+          <h2 style="color: white;">歡迎來到擺盤的美妙世界</h2>
+          <img src="img_source\foodpresentation_removebg.png" style="width:35%;height:20%;">
+          <div class="form">
+            <form class="login-form">
+            <div class="row align-items-center">
+              <h5 class="col-4">帳號 :</h5>
+              <input type="text" placeholder="Username" class="col-8"/>
+            </div>
+            <div class="row align-items-center">
+              <h5 class="col-4">密碼 :</h5>
+              <input type="password" placeholder="Password" class="col-8"/>
+            </div>
+            <div id="btn_box" style="text-align: center;">
+              <button class="btn btn-outline-dark" v-on:click="visit()">訪客進入</button>
+            </div>
+            </form>
+          </div>
+    </div>
+    <!--擺盤-->
+    <div class="Wobble container justify-content-center" v-show="!login">
+      <!--登入狀態列-->
+      <div id="show_status" class="show_status row justify-content-between" style="text-align: left;height: 10%;">
+        <div id="show_name" class="show_name col-3">{{person_inf.name}}</div>
+        <div id="status" class="status col-3" style="text-align: center;" v-show="!Chosed_game">{{status}}</div>
+        <button id="finish" type="button" class="finish col-3" style="font-size: 30px;" v-show="Chosed_game">完成</button>
+        <div id="show_money" class="show_money col-3">星星 : {{person_inf.money}}</div>
+      </div>
+      <!--擺盤功能-->
+      <div id="show" class="show row" v-show="Chosed_game">
+        <div id="show_game" class="show_game col-6">
+             
+        </div>
+        <div id="tool_box" class="tool_box col-6">
+          <div id="choose_item" class="choose_item row">
+            <button id="doily" type="button" class="item_btn doily col" v-bind:class="{ chosed: Chosed_doily }" v-on:click="doily()">桌巾</button>
+            <button  id="tableware" type="button" class="item_btn tableware col" v-bind:class="{ chosed: Chosed_tableware }" v-on:click="tableware()">餐具</button>
+            <button id="staple_food" type="button" class="item_btn staple_food col" v-bind:class="{ chosed: Chosed_staple_food }" v-on:click="staple_food()">主食</button>
+            <button id="decoration" type="button" class="item_btn decoration col" v-bind:class="{ chosed: Chosed_decoration }" v-on:click="decoration()">裝飾</button>
+            <button id="side_dish" type="button" class="item_btn side_dish col" v-bind:class="{ chosed: Chosed_side_dish }" v-on:click="side_dish()">配菜</button>
+            <button id="sauce" type="button" class="item_btn sauce col" v-bind:class="{ chosed: Chosed_sauce }" v-on:click="sauce()">醬料</button>
+            <button id="dessert" type="button" class="item_btn dessert col" v-bind:class="{ chosed: Chosed_dessert }" v-on:click="dessert()">甜點</button>
+          </div>
+           <!--桌巾清單-->
+           <div class="source_box row">
+            <div class="soruce col-4" v-for="(value,index) in person_inf.have_soruce.doily" v-show="index<=end_pg && index>=star_pg && Chosed_doily">
+              <div class="soruce_item" v-bind:id="value.name" v-bind:style="{backgroundImage: 'url(\'' + value.url + '\')' }" v-on:click="crear_item(this.event.target,value.url)"></div>
+            </div>
+          </div>
+           <!--餐具清單-->
+          <div class="source_box row">
+            <div class="soruce col-4" v-for="(value,index) in person_inf.have_soruce.tableware" v-show="index<=end_pg && index>=star_pg && Chosed_tableware">
+              <div class="soruce_item" v-bind:id="value.name" v-bind:style="{backgroundImage: 'url(\'' + value.url + '\')' }" v-on:click="crear_item(this.event.target,value.url)"></div>
+            </div>
+          </div>
+          
+          <!--主食清單-->
+          <div class="source_box row">
+            <div class="soruce col-4" v-for="(value,index) in person_inf.have_soruce.staple_food" v-show="index<=end_pg && index>=star_pg && Chosed_staple_food">
+              <div class="soruce_item" v-bind:id="value.name" v-bind:style="{backgroundImage: 'url(\'' + value.url + '\')' }" v-on:click="crear_item(this.event.target,value.url)"></div>
+            </div>
+          </div>
+          <!--裝飾清單-->
+          <div class="source_box row">
+            <div class="soruce col-4" v-for="(value,index) in person_inf.have_soruce.decoration" v-show="index<=end_pg && index>=star_pg && Chosed_decoration">
+              <div class="soruce_item" v-bind:id="value.name" v-bind:style="{backgroundImage: 'url(\'' + value.url + '\')' }" v-on:click="crear_item(this.event.target,value.url)"></div>
+            </div>
+          </div>
+           <!--配菜清單-->
+          <div class="source_box row">
+            <div class="soruce col-4" v-for="(value,index) in person_inf.have_soruce.side_dish" v-show="index<=end_pg && index>=star_pg && Chosed_side_dish">
+              <div class="soruce_item" v-bind:id="value.name" v-bind:style="{backgroundImage: 'url(\'' + value.url + '\')' }" v-on:click="crear_item(this.event.target,value.url)"></div>
+            </div>
+          </div>
+           <!--醬料清單-->
+          <div class="source_box row">
+            <div class="soruce col-4" v-for="(value,index) in person_inf.have_soruce.sauce" v-show="index<=end_pg && index>=star_pg && Chosed_sauce">
+              <div class="soruce_item" v-bind:id="value.name" v-bind:style="{backgroundImage: 'url(\'' + value.url + '\')' }" v-on:click="crear_item(this.event.target,value.url)"></div>
+            </div>
+          </div>
+           <!--甜點清單-->
+          <div class="source_box row">
+            <div class="soruce col-4" v-for="(value,index) in person_inf.have_soruce.dessert" v-show="index<=end_pg && index>=star_pg && Chosed_dessert">
+              <div class="soruce_item" v-bind:id="value.name" v-bind:style="{backgroundImage: 'url(\'' + value.url + '\')' }" v-on:click="crear_item(this.event.target,value.url)"></div>
+            </div>
+          </div>
+          <!--前/後翻頁-->
+          <div class="row justify-content-between align-items-center">
+            <button type="button" class="previous col-2" v-on:click="previous()">&laquo;</button>
+            <div class="col-2" style="color: white;">{{stand}}/{{total}}</div>
+            <button type="button" class="next col-2" v-on:click="next()">&raquo;</button>
+          </div>
+        </div>
+      </div>
+      <!--商店功能-->
+      <div id="shop" class="show row justify-content-center" v-show="Chosed_shoppnig">
+        <div id="shop_mall" class="tool_box col-10">
+          <div id="choose_item" class="choose_item row">
+            <button  id="tableware" type="button" class="item_btn tableware col" v-bind:class="{ chosed: Chosed_tableware }" v-on:click="tableware()">餐具</button>
+            <button id="doily" type="button" class="item_btn doily col" v-bind:class="{ chosed: Chosed_doily }" v-on:click="doily()">桌巾</button>
+            <button id="staple_food" type="button" class="item_btn staple_food col" v-bind:class="{ chosed: Chosed_staple_food }" v-on:click="staple_food()">主食</button>
+            <button id="decoration" type="button" class="item_btn decoration col" v-bind:class="{ chosed: Chosed_decoration }" v-on:click="decoration()">裝飾</button>
+            <button id="side_dish" type="button" class="item_btn side_dish col" v-bind:class="{ chosed: Chosed_side_dish }" v-on:click="side_dish()">配菜</button>
+            <button id="sauce" type="button" class="item_btn sauce col" v-bind:class="{ chosed: Chosed_sauce }" v-on:click="sauce()">醬料</button>
+            <button id="dessert" type="button" class="item_btn dessert col" v-bind:class="{ chosed: Chosed_dessert }" v-on:click="dessert()">甜點</button>
+          </div>
+          <div class="source_box row">
+            <div class="soruce row col-4">
+              <img class="col-6">
+              <div class="col-5">
+              <div style="color: white;"></div>
+                <button id="buy" class="btn btn-outline-dark">購買</button>
+              </div>
+            </div>
+          </div>
+          <!--前/後翻頁-->
+          <div class="row justify-content-between align-items-center">
+            <button type="button" class="previous col-2" v-on:click="previous()">&laquo;</button>
+            <div class="col-2" style="color: white;">{{stand}}/{{total}}</div>
+            <button type="button" class="next col-2" v-on:click="next()">&raquo;</button>
+          </div>
+        </div>
+      </div>
+      <!--大廳功能-->
+      <div id="showing" class="showing row justify-content-center" v-show="Chosed_home">
+          <div class="row col-10">
+            <div class="soruce col-4">
+                    <img>
+                    <div style="color: white;"></div>
+                    <div style="color: white;"></div>
+            </div>
+            <!--前/後翻頁-->
+            <div class="row col-12 justify-content-around align-items-center">
+              <button id="previous" type="button" class="previous col-2" v-on:click="previous()">&laquo;</button>
+              <div class="col-2" style="color: white;">{{stand}}/{{total}}</div>
+              <button id="next" type="button" class="next col-2" v-on:click="next()">&raquo;</button>
+            </div>
+          </div>
+      </div>
+      <!--評分功能-->
+      <div id="voting" class="voting row justify-content-center" v-show="Chosed_voting">
+        <div>
+          <h1>規則</h1>
+          <button v-on:click="vote_star()">開始</button>
+        </div>
+        <div id="work_box" class="row col-12" v-if="!rule">
+          <input id="works_1" type="image" class="works col" v-bind:src="vote_work_1" style="font-size: 30px;margin: 20px;height: 90%;" v-on:click="voting(vote_work_1)">
+          <input id="works_2" type="image" class="works col" v-bind:src="vote_work_2" style="font-size: 30px;margin: 20px;height: 90%;" v-on:click="voting(vote_work_2)">
+        </div>
+        <div class="col-3" style="color: white;font-size:35px;" v-if="!rule">{{stand}}/{{total}}</div>
+      </div>
+      <!--個人資料-->
+      <div id="detail_status" class="detail_status row" style="height: 79%;padding: 10px;" v-show="Chosed_person_inf">
+        <img id="photo" class="photo col-5" style="height: 100%;">
+        <div class="row col-7 justify-content-center" style="height: 100%;">
+          <div id="revise_name" class="revise_name" style="height: 15%;">
+            <input id="name" class="name col-9" style="text-align: center;margin: 10px;" v-model="person_inf.name">
+            <button id="rename" type="button" class="rename col-2" style="font-size: 20px;" v-show="!revise" v-on:click="rename()">修改</button>
+            <button id="store" type="button" class="store col-2" style="font-size: 20px;" v-show="revise" v-on:click="store()">保存</button>
+          </div>
+          <div id="money" class="money col-12" style="height: 15%;">目前擁有星星 : {{person_inf.money}}</div>
+          <div id="avg" class="avg col-12" style="height: 15%;">平均評價 : {{person_inf.avg}}</div>
+          <div id="look" class="look row justify-content-center col-12">
+            <button id="have_soruce" type="button" class="have_soruce col-4 btn btn-secondary" data-toggle="modal" data-target="#have_soruce_Modal" style="font-size: 30px;">持有素材</button>
+           
+            <button id="history" type="button" class="history col-4 offset-1 btn btn-secondary" data-toggle="modal" data-target="#history_Modal" style="font-size: 30px;">過去紀錄</button>
+            
+          </div>
+        </div>
+      </div>
+      <!--功能選單-->
+      <div id="menu" class="menu row" style="height: 11%;">
+          <button id="game" type="button" class="game col" style="font-size: 22px;" v-on:click="game()">擺盤</button>
+          <button id="shoppnig" type="button" class="shoppnig col" style="font-size: 22px;" v-on:click="shoppnig()">商店</button>
+          <button id="home" type="button" class="home col" style="font-size: 22px;" v-on:click="home()">大廳</button>
+          <button id="vote" type="button" class="vote col" style="font-size: 22px;" v-on:click="vote()">評分</button>
+          <button id="person_inf" type="button" class="person_inf col" style="font-size: 22px;" v-on:click="personInformation()">個人資料</button>
+      </div>
+    </div>
+  </div>
+  <script src="./Wobble.js"></script>
+  <script src="./drop.js"></script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.6/umd/popper.min.js" integrity="sha384-wHAiFfRlMFy6i5SRaxvfOCifBUQy1xHdJ/yoi7FRNXMRBu5WHdZYu1hA6ZOblgut" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js" integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k" crossorigin="anonymous"></script>
+
+</body>
+</html>
